@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>满满漫画工坊</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=ZCOOL+KuaiLe&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workbench" aria-label="漫画生成工作台">
+        <header class="masthead">
+          <div>
+            <p class="eyebrow">Manman Comic Studio</p>
+            <h1>满满漫画工坊</h1>
+          </div>
+          <a class="publish-link" href="https://creator.xiaohongshu.com/publish/publish" target="_blank" rel="noreferrer">
+            打开小红书发布页
+          </a>
+        </header>
+
+        <div class="generator-grid">
+          <section class="input-panel" aria-label="输入文案">
+            <div class="section-head">
+              <h2>文案输入</h2>
+              <button id="load-sample" type="button">填入示例</button>
+            </div>
+            <label for="story-input">日常素材</label>
+            <textarea
+              id="story-input"
+              spellcheck="false"
+              placeholder="把今天的育儿小片段写在这里，例如：六一前给满买了一双黄色长颈鹿洞洞鞋……"
+            ></textarea>
+
+            <div class="field-row">
+              <label>
+                漫画标题
+                <input id="episode-title" type="text" value="六一儿童节礼物" />
+              </label>
+              <label>
+                主场景
+                <select id="scene-select">
+                  <option>客厅</option>
+                  <option>餐桌</option>
+                  <option>电脑桌</option>
+                  <option>浴室</option>
+                  <option>公园步道</option>
+                  <option>卧室</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                格数
+                <select id="panel-count">
+                  <option value="4">4 格</option>
+                  <option value="6" selected>6 格</option>
+                </select>
+              </label>
+              <label>
+                正文风格
+                <select id="caption-style">
+                  <option value="warm" selected>温暖记录</option>
+                  <option value="casual">更口语</option>
+                  <option value="short">短正文</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="upload-field">
+              空白漫画底图
+              <input id="blank-image-input" type="file" accept="image/*" />
+            </label>
+            <p class="hint">上传 AI 生成的空白气泡漫画后，页面会直接用这张图作为“空白分镜”，并叠字生成“带字分镜”。</p>
+
+            <div class="actions">
+              <button class="primary" id="generate" type="button">生成漫画方案</button>
+              <button id="reset" type="button">清空</button>
+            </div>
+          </section>
+
+          <section class="preview-panel" aria-label="漫画预览">
+            <div class="tabs" role="tablist" aria-label="预览切换">
+              <button class="tab active" type="button" data-view="blank">空白分镜草图</button>
+              <button class="tab" type="button" data-view="lettered">带字分镜草图</button>
+              <button class="tab" type="button" data-view="dialogue">对话文案</button>
+              <button class="tab" type="button" data-view="prompts">AI 生图提示词</button>
+            </div>
+
+            <div class="preview-stage">
+              <div id="comic-preview" class="comic-frame" aria-live="polite">
+                <canvas id="comic-canvas"></canvas>
+              </div>
+              <textarea id="dialogue-output" class="dialogue-output" readonly hidden></textarea>
+              <textarea id="prompt-output" class="dialogue-output" readonly hidden></textarea>
+            </div>
+
+            <div class="export-actions">
+              <button id="copy-dialogue" type="button">复制对话</button>
+              <button id="copy-prompts" type="button">复制提示词</button>
+              <button id="download-svg" type="button">成稿图片模式</button>
+              <button id="download-png" type="button">下载 PNG</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="publish-panel" aria-label="小红书发布内容">
+        <div class="section-head">
+          <h2>小红书发布内容</h2>
+          <div class="publish-actions">
+            <button id="copy-title" type="button">复制标题</button>
+            <button id="copy-caption" type="button">复制正文</button>
+            <button id="copy-tags" type="button">复制标签</button>
+            <button id="copy-all" type="button">复制全部</button>
+          </div>
+        </div>
+
+        <div class="publish-grid">
+          <label>
+            标题
+            <input id="publish-title" type="text" readonly />
+          </label>
+          <label>
+            标签
+            <input id="publish-tags" type="text" readonly />
+          </label>
+        </div>
+        <label>
+          正文
+          <textarea id="publish-caption" readonly></textarea>
+        </label>
+        <label>
+          置顶评论
+          <input id="pin-comment" type="text" readonly />
+        </label>
+      </section>
+    </main>
+
+    <template id="panel-template">
+      <article class="script-panel">
+        <span class="script-index"></span>
+        <strong class="script-scene"></strong>
+        <p class="script-action"></p>
+        <p class="script-dialogue"></p>
+      </article>
+    </template>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

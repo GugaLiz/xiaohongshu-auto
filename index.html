@@ -78,7 +78,53 @@
               空白漫画底图
               <input id="blank-image-input" type="file" accept="image/*" />
             </label>
-            <p class="hint">上传 AI 生成的空白气泡漫画后，页面会直接用这张图作为“空白分镜”，并叠字生成“带字分镜”。</p>
+            <p class="hint">上传 AI 生成的空白气泡漫画后，页面会直接用这张图作为"空白分镜"，并叠字生成"带字分镜"。</p>
+
+            <div class="ref-section">
+              <p class="ref-section-title">参考图上传指南</p>
+              <p class="hint">建议从 <code>参考图/</code> 文件夹中选择对应类别的图片上传，AI 生图时会参考这些图的画风和细节。</p>
+              <div class="ref-categories">
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">画风</span>
+                  <span class="ref-cat-desc">参考图/画风参考/ — 吉卜力风格生成图</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">满穿搭</span>
+                  <span class="ref-cat-desc">参考图/满常穿的衣服/ — 背带装、柠檬T、碎花裙</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">爸爸</span>
+                  <span class="ref-cat-desc">参考图/爸爸常穿的衣服/ — 米白T+灰色运动短裤</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">妈妈</span>
+                  <span class="ref-cat-desc">参考图/妈妈常穿的衣服/ — 深蓝猫咪T+浅蓝牛仔裤</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">物品</span>
+                  <span class="ref-cat-desc">故事里提到的道具/物品照片，如洞洞鞋、玩具等</span>
+                </div>
+              </div>
+            </div>
+
+            <label class="upload-field">
+              参考图（可多选，建议一次选同一类别的图）
+              <input id="ref-image-input" type="file" accept="image/*" multiple />
+            </label>
+            <div class="field-row ref-category-row">
+              <label>
+                参考类型
+                <select id="ref-category-select">
+                  <option value="style">画风参考</option>
+                  <option value="character">人物形象参考</option>
+                  <option value="outfit">服装参考</option>
+                  <option value="prop">物品参考</option>
+                  <option value="composition">构图参考</option>
+                </select>
+              </label>
+            </div>
+            <div id="ref-image-gallery" class="ref-gallery"></div>
+            <p class="hint">上传后会在 AI 生图提示词中标注参考图类型，帮助 AI 更准确地还原画风和人物形象。</p>
 
             <div class="actions">
               <button class="primary" id="generate" type="button">生成漫画方案</button>

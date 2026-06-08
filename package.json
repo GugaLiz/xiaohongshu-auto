@@ -1,0 +1,10 @@
+{
+  "name": "xiaohongshu-auto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prompt builder for a family daily comic workflow.",
+  "scripts": {
+    "prompt": "node tools/prompt-builder.js",
+    "serve": "node tools/static-server.js"
+  }
+}

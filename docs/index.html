@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>满满漫画工坊</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=ZCOOL+KuaiLe&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workbench" aria-label="漫画生成工作台">
+        <header class="masthead">
+          <div>
+            <p class="eyebrow">Manman Comic Studio</p>
+            <h1>满满漫画工坊</h1>
+          </div>
+          <a class="publish-link" href="https://creator.xiaohongshu.com/publish/publish" target="_blank" rel="noreferrer">
+            打开小红书发布页
+          </a>
+        </header>
+
+        <div class="generator-grid">
+          <section class="input-panel" aria-label="输入文案">
+            <div class="section-head">
+              <h2>文案输入</h2>
+              <button id="load-sample" type="button">填入示例</button>
+            </div>
+            <label for="story-input">日常素材</label>
+            <textarea
+              id="story-input"
+              spellcheck="false"
+              placeholder="把今天的育儿小片段写在这里，例如：六一前给满买了一双黄色长颈鹿洞洞鞋……"
+            ></textarea>
+
+            <div class="field-row">
+              <label>
+                漫画标题
+                <input id="episode-title" type="text" value="六一儿童节礼物" />
+              </label>
+              <label>
+                主场景
+                <select id="scene-select">
+                  <option>客厅</option>
+                  <option>餐桌</option>
+                  <option>电脑桌</option>
+                  <option>浴室</option>
+                  <option>公园步道</option>
+                  <option>卧室</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                格数
+                <select id="panel-count">
+                  <option value="4">4 格</option>
+                  <option value="6" selected>6 格</option>
+                </select>
+              </label>
+              <label>
+                正文风格
+                <select id="caption-style">
+                  <option value="warm" selected>温暖记录</option>
+                  <option value="casual">更口语</option>
+                  <option value="short">短正文</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="upload-field">
+              空白漫画底图
+              <input id="blank-image-input" type="file" accept="image/*" />
+            </label>
+            <p class="hint">上传 AI 生成的空白气泡漫画后，页面会直接用这张图作为"空白分镜"，并叠字生成"带字分镜"。</p>
+
+            <div class="ref-section">
+              <p class="ref-section-title">参考图上传指南</p>
+              <p class="hint">建议从 <code>参考图/</code> 文件夹中选择对应类别的图片上传，AI 生图时会参考这些图的画风和细节。</p>
+              <div class="ref-categories">
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">画风</span>
+                  <span class="ref-cat-desc">参考图/画风参考/ — 吉卜力风格生成图</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">满穿搭</span>
+                  <span class="ref-cat-desc">参考图/满常穿的衣服/ — 背带装、柠檬T、碎花裙</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">爸爸</span>
+                  <span class="ref-cat-desc">参考图/爸爸常穿的衣服/ — 米白T+灰色运动短裤</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">妈妈</span>
+                  <span class="ref-cat-desc">参考图/妈妈常穿的衣服/ — 深蓝猫咪T+浅蓝牛仔裤</span>
+                </div>
+                <div class="ref-cat">
+                  <span class="ref-cat-tag">物品</span>
+                  <span class="ref-cat-desc">故事里提到的道具/物品照片，如洞洞鞋、玩具等</span>
+                </div>
+              </div>
+            </div>
+
+            <label class="upload-field">
+              参考图（可多选，建议一次选同一类别的图）
+              <input id="ref-image-input" type="file" accept="image/*" multiple />
+            </label>
+            <div class="field-row ref-category-row">
+              <label>
+                参考类型
+                <select id="ref-category-select">
+                  <option value="style">画风参考</option>
+                  <option value="character">人物形象参考</option>
+                  <option value="outfit">服装参考</option>
+                  <option value="prop">物品参考</option>
+                  <option value="composition">构图参考</option>
+                </select>
+              </label>
+            </div>
+            <div id="ref-image-gallery" class="ref-gallery"></div>
+            <p class="hint">上传后会在 AI 生图提示词中标注参考图类型，帮助 AI 更准确地还原画风和人物形象。</p>
+
+            <div class="actions">
+              <button class="primary" id="generate" type="button">生成漫画方案</button>
+              <button id="reset" type="button">清空</button>
+            </div>
+
+            <div class="api-settings" style="margin-top:16px; padding:12px; border:1px dashed #ccc; border-radius:8px;">
+              <p style="font-weight:700; margin:0 0 8px;">AI 生图设置</p>
+              <div class="field-row">
+                <label>
+                  图片生成服务
+                  <select id="api-provider">
+                    <option value="volcengine">火山引擎（豆包 Seedream，有免费额度）</option>
+                    <option value="siliconflow">硅基流动 SiliconFlow</option>
+                    <option value="together">Together AI（FLUX 模型）</option>
+                    <option value="openai">OpenAI DALL-E 3</option>
+                    <option value="stability">Stability AI（SDXL）</option>
+                    <option value="pollinations">Pollinations（免费，可能排队）</option>
+                  </select>
+                </label>
+              </div>
+              <div class="field-row" id="sf-model-row">
+                <label>
+                  生图模型
+                  <select id="sf-model">
+                    <option value="doubao-seedream-5-0-260128">Seedream 5.0（豆包，推荐）</option>
+                    <option value="doubao-seedream-4-5-251128">Seedream 4.5</option>
+                    <option value="doubao-seedream-4-0-250828">Seedream 4.0</option>
+                    <option value="Tongyi-MAI/Z-Image-Turbo">通义 Z-Image-Turbo（硅基流动）</option>
+                    <option value="baidu/ERNIE-Image-Turbo">百度 ERNIE-Image-Turbo（硅基流动）</option>
+                  </select>
+                </label>
+              </div>
+              <label style="display:block; margin-top:8px;">
+                API Key（免费服务可留空）
+                <input id="api-key" type="password" placeholder="sk-..." autocomplete="off" />
+              </label>
+              <div class="actions" style="margin-top:8px;">
+                <button class="primary" id="generate-images" type="button">生成分镜漫画图</button>
+              </div>
+              <p class="hint" id="gen-progress" style="margin-top:6px; min-height:1.2em;"></p>
+            </div>
+          </section>
+
+          <section class="preview-panel" aria-label="漫画预览">
+            <div class="tabs" role="tablist" aria-label="预览切换">
+              <button class="tab active" type="button" data-view="blank">空白分镜草图</button>
+              <button class="tab" type="button" data-view="lettered">带字分镜草图</button>
+              <button class="tab" type="button" data-view="dialogue">对话文案</button>
+              <button class="tab" type="button" data-view="prompts">AI 生图提示词</button>
+            </div>
+
+            <div class="preview-stage">
+              <div id="comic-preview" class="comic-frame" aria-live="polite">
+                <canvas id="comic-canvas"></canvas>
+              </div>
+              <textarea id="dialogue-output" class="dialogue-output" readonly hidden></textarea>
+              <textarea id="prompt-output" class="dialogue-output" readonly hidden></textarea>
+            </div>
+
+            <div class="export-actions">
+              <button id="copy-dialogue" type="button">复制对话</button>
+              <button id="copy-prompts" type="button">复制提示词</button>
+              <button id="download-svg" type="button">成稿图片模式</button>
+              <button id="download-png" type="button">下载 PNG</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="publish-panel" aria-label="小红书发布内容">
+        <div class="section-head">
+          <h2>小红书发布内容</h2>
+          <div class="publish-actions">
+            <button id="copy-title" type="button">复制标题</button>
+            <button id="copy-caption" type="button">复制正文</button>
+            <button id="copy-tags" type="button">复制标签</button>
+            <button id="copy-all" type="button">复制全部</button>
+          </div>
+        </div>
+
+        <div class="publish-grid">
+          <label>
+            标题
+            <input id="publish-title" type="text" readonly />
+          </label>
+          <label>
+            标签
+            <input id="publish-tags" type="text" readonly />
+          </label>
+        </div>
+        <label>
+          正文
+          <textarea id="publish-caption" readonly></textarea>
+        </label>
+        <label>
+          置顶评论
+          <input id="pin-comment" type="text" readonly />
+        </label>
+      </section>
+    </main>
+
+    <template id="panel-template">
+      <article class="script-panel">
+        <span class="script-index"></span>
+        <strong class="script-scene"></strong>
+        <p class="script-action"></p>
+        <p class="script-dialogue"></p>
+      </article>
+    </template>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js?v=20260608c"></script>
+  </body>
+</html>

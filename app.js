@@ -250,36 +250,173 @@ function inferDialogue(action, index, panelCount, allSentences) {
   return index === panelCount - 1 ? ["\u6EE1\uFF1A\u8FD8\u8981\uFF5E"] : ["\u6EE1\uFF1A\u597D\u73A9"];
 }
 
-function buildTitle(story, episodeTitle) {
-  if (/\u6D1E\u6D1E\u978B/.test(story)) return "\u7ED9\u6EE1\u4E70\u4E86\u7B2C\u4E00\u53CC\u6D1E\u6D1E\u978B\uFF0C\u5979\u5F00\u5FC3\u5230\u6D17\u6FA1\u90FD\u8981\u7A7F";
-  if (/\u5FEB\u9012/.test(story)) return "\u5FEB\u9012\u5230\u4E86\u4EE5\u540E\uFF0C\u6EE1\u53C8\u53D1\u73B0\u4E86\u65B0\u7684\u5FEB\u4E50";
-  if (/\u6D17\u6FA1/.test(story)) return "\u5C0F\u670B\u53CB\u7684\u575A\u6301\uFF0C\u6709\u65F6\u5019\u771F\u7684\u597D\u53EF\u7231";
-  if (episodeTitle) {
-    var storyNoun = extractNoun(normalizeStory(story));
-    if (storyNoun && storyNoun.length >= 2 && storyNoun.length <= 6) {
-      return episodeTitle + "\uFF0C\u6EE1\u5BF9" + storyNoun + "\u8BA4\u771F\u7684\u6837\u5B50\u597D\u53EF\u7231";
-    }
-    return episodeTitle + "\uFF0C\u88AB\u6EE1\u8BA4\u771F\u53EF\u7231\u5230\u4E86";
+function buildEpisodeTitle(story) {
+  var clean = normalizeStory(story);
+  var topic = findTopic(clean);
+  var quote = extractQuote(clean);
+
+  /* Try to extract from the story's own title marker 《xxx》 */
+  var raw = story.trim();
+  var titleMatch = raw.match(/\u300A([^\u300B]{2,12})\u300B/);
+  if (titleMatch) return titleMatch[1];
+
+  /* Use a direct quote as the episode title */
+  if (quote && quote.length >= 2 && quote.length <= 10) {
+    return "\u6EE1\u8BF4\uFF1A\u201C" + quote + "\u201D";
   }
-  return "\u6EE1\u6EE1\u4ECA\u5929\u53C8\u6709\u65B0\u7684\u7AE5\u8A00\u7AE5\u8BED";
+
+  /* Build from topic + action/event */
+  if (topic) {
+    var actionWords = [
+      "\u5230\u624B\u4E86", "\u6765\u4E86", "\u5F00\u7BB1", "\u521D\u4F53\u9A8C",
+      "\u5C0F\u63D2\u66F2", "\u65E5\u8BB0", "\u7684\u6545\u4E8B",
+      "\u53C8\u6765\u4E86", "\u5F00\u5FC3\u65E5", "\u7684\u4E00\u5929"
+    ];
+    var pick = actionWords[Math.floor(Math.random() * actionWords.length)];
+    return topic + pick;
+  }
+
+  return "\u6EE1\u7684\u65E5\u5E38";
+}
+
+function buildTitle(story, episodeTitle) {
+  var clean = normalizeStory(story);
+  var topic = findTopic(clean);
+  var quote = extractQuote(clean);
+  var sentences = splitSentences(clean);
+
+  /* Extract a fun detail from the story for dynamic titles */
+  var funBit = "";
+  for (var fi = 0; fi < sentences.length; fi++) {
+    var s = sentences[fi];
+    if (s.length > 5 && s.length < 28 && (
+      /\u8D85\u7EA7|\u7279\u522B|\u597D\u5F00\u5FC3|\u5F00\u5FC3|\u5174\u594B|\u4E0D\u80AF|\u820D\u4E0D\u5F97|\u53EF\u7231|\u7B11|\u8BA4\u771F|\u5FB7\u746B|\u4E00\u76F4|\u8DD1|\u62CE/.test(s)
+    )) {
+      funBit = s.replace(/^[，,、\s]+/, "");
+      break;
+    }
+  }
+
+  /* Try to build a natural, specific title from story content */
+  if (topic && funBit) {
+    var templates = [
+      topic + "\u5230\u624B\u4E86\uFF0C" + funBit,
+      "\u7ED9\u6EE1\u4E70\u4E86" + topic + "\uFF0C" + funBit,
+      "\u6EE1\u548C\u5979\u7684" + topic + "\uFF1A" + funBit,
+      funBit + "\u2026\u53EA\u56E0\u4E3A\u4E00\u4E2A" + topic
+    ];
+    return templates[Math.floor(Math.random() * templates.length)];
+  }
+
+  if (quote && quote.length >= 2 && quote.length <= 14) {
+    var quoteTemplates = [
+      "\u6EE1\u8BF4\uFF1A\u201C" + quote + "\u201D\uFF0C\u6211\u7B11\u4E86\u4E00\u6574\u5929",
+      "\u201C" + quote + "\u201D\u2014\u2014\u6EE1\u7684\u65E5\u5E38\u91D1\u53E5",
+      "\u88AB\u6EE1\u8FD9\u53E5\u201C" + quote + "\u201D\u6574\u7834\u9632\u4E86"
+    ];
+    return quoteTemplates[Math.floor(Math.random() * quoteTemplates.length)];
+  }
+
+  if (topic) {
+    var topicTemplates = [
+      "\u6EE1\u5BF9" + topic + "\u7684\u6267\u5FF5\uFF0C\u771F\u7684\u53C8\u597D\u7B11\u53C8\u53EF\u7231",
+      "\u4E00\u4E2A" + topic + "\u5C31\u8BA9\u6EE1\u5F00\u5FC3\u4E86\u4E00\u6574\u5929",
+      "\u6EE1\u548C" + topic + "\u7684\u6545\u4E8B\uFF0C\u6BD4\u6211\u60F3\u8C61\u7684\u7CBE\u5F69"
+    ];
+    return topicTemplates[Math.floor(Math.random() * topicTemplates.length)];
+  }
+
+  if (episodeTitle) {
+    return episodeTitle + "\uFF5C\u6EE1\u7684\u65E5\u5E38\u5C0F\u786E\u5E78";
+  }
+  return "\u6EE1\u6EE1\u4ECA\u5929\u53C8\u6709\u65B0\u641E\u7B11\u4E86";
 }
 
 function buildCaption(story, panels, style) {
   var clean = normalizeStory(story);
+  var sentences = splitSentences(clean);
+  var topic = findTopic(clean);
+  var quote = extractQuote(clean);
   var lastPanel = panels[panels.length - 1];
   var punchline = (lastPanel && lastPanel.dialogue && lastPanel.dialogue[0])
     ? lastPanel.dialogue[0].replace(/^\u6EE1\uFF1A/, "")
-    : "\u5C0F\u670B\u53CB\u7684\u5FEB\u4E50\u771F\u7684\u5F88\u5177\u4F53";
+    : "";
+
+  /* Find a fun/vivid sentence from the story */
+  var funSentence = "";
+  for (var fi = 0; fi < sentences.length; fi++) {
+    var s = sentences[fi];
+    if (s.length > 5 && s.length < 35 && (
+      /\u8D85\u7EA7|\u7279\u522B|\u597D\u5F00\u5FC3|\u5174\u594B|\u4E0D\u80AF|\u820D\u4E0D\u5F97|\u4E00\u76F4|\u8DD1|\u7B11|\u8BA4\u771F|\u5FB7\u746B|\u62CE|\u8F6C\u5708/.test(s)
+    )) {
+      funSentence = s;
+      break;
+    }
+  }
 
   if (style === "short") {
-    return clean + "\n\n\u6700\u540E\u5979\u4E00\u76F4\u5FF5\uFF1A\u201C" + punchline + "\u201D\n\n\u5C0F\u670B\u53CB\u7684\u5FEB\u4E50\u771F\u7684\u597D\u5177\u4F53\u3002";
+    var lines = [clean, ""];
+    if (funSentence) {
+      lines.push("\u6700\u641E\u7B11\u7684\u662F\uFF0C" + funSentence + "\u3002");
+    } else if (punchline) {
+      lines.push("\u5979\u6700\u540E\u4E00\u76F4\u5FF5\u7740\uFF1A\u201C" + punchline + "\u201D");
+    }
+    lines.push("");
+    var closings = [
+      "\u5C0F\u5B69\u5B50\u7684\u5FEB\u4E50\u5C31\u662F\u8FD9\u4E48\u5177\u4F53\u3002",
+      "\u5C0F\u670B\u53CB\u7684\u4E16\u754C\u771F\u597D\u61C2\u3002",
+      "\u5C31\u8FD9\u6837\u5F00\u5FC3\u4E86\u4E00\u6574\u5929\u3002",
+      "\u6EE1\u7684\u5FEB\u4E50\u9608\u503C\u771F\u4F4E\u554A\u3002"
+    ];
+    lines.push(closings[Math.floor(Math.random() * closings.length)]);
+    return lines.join("\n");
   }
 
   if (style === "casual") {
-    return clean + "\n\n\u540E\u9762\u771F\u7684\u6709\u70B9\u597D\u7B11\uFF0C\u660E\u660E\u53EA\u662F\u4E00\u4E2A\u5C0F\u793C\u7269\uFF0C\u5979\u5374\u50CF\u53D1\u73B0\u4E86\u5168\u4E16\u754C\u3002\n\n\u6211\u731C\u5979\u73B0\u5728\u7684\u903B\u8F91\u662F\uFF1A\u53EA\u8981\u6709\u65B0\u9C9C\u4E8B\uFF0C\u5C31\u503C\u5F97\u5F00\u5FC3\u4E00\u6574\u5929\u3002";
+    var lines = [clean, ""];
+    if (funSentence) {
+      var reactions = [
+        "\u8BF4\u5B9E\u8BDD\u770B\u5230\u8FD9\u6BB5\u6211\u7B11\u4E86\u597D\u4E45\uFF0C" + funSentence + "\u3002",
+        "\u7ED9\u4F60\u4EEC\u8BB2\u4E2A\u641E\u7B11\u7684\uFF0C" + funSentence + "\u3002",
+        "\u54C8\u54C8\u54C8\u6700\u7EDD\u7684\u662F\uFF0C" + funSentence + "\u3002"
+      ];
+      lines.push(reactions[Math.floor(Math.random() * reactions.length)]);
+    } else {
+      lines.push("\u540E\u9762\u7684\u53D1\u5C55\u6211\u771F\u7684\u6CA1\u60F3\u5230\u3002");
+    }
+    lines.push("");
+    var reflections = [
+      "\u5C0F\u5B69\u5B50\u7684\u903B\u8F91\u5C31\u662F\u8FD9\u6837\uFF0C\u4E00\u4E2A\u5C0F\u4E8B\u5C31\u80FD\u5F00\u5FC3\u4E00\u6574\u5929\u3002\u771F\u7FA1\u6155\u3002",
+      "\u5927\u4EBA\u89C9\u5F97\u666E\u901A\u7684\u4E8B\uFF0C\u5728\u5979\u90A3\u5C31\u662F\u4EF6\u5927\u4E8B\u3002\u4E5F\u8BB8\u8FD9\u624D\u662F\u5FEB\u4E50\u7684\u79D8\u8BC0\u5427\u3002",
+      "\u5F53\u5988\u4E4B\u540E\u624D\u53D1\u73B0\uFF0C\u5C0F\u670B\u53CB\u6559\u6211\u7684\u6BD4\u6211\u6559\u5979\u7684\u591A\u3002\u5FEB\u4E50\u8FD9\u4EF6\u4E8B\uFF0C\u771F\u7684\u4E0D\u9700\u8981\u7406\u7531\u3002"
+    ];
+    lines.push(reflections[Math.floor(Math.random() * reflections.length)]);
+    return lines.join("\n");
   }
 
-  return clean + "\n\n\u6700\u53EF\u7231\u7684\u662F\u540E\u9762\u90A3\u53E5\uFF1A\u201C" + punchline + "\u201D\n\n\u6709\u65F6\u5019\u5927\u4EBA\u89C9\u5F97\u5F88\u666E\u901A\u7684\u5C0F\u4E8B\uFF0C\u5728\u5C0F\u670B\u53CB\u90A3\u91CC\u5C31\u662F\u4E00\u4EF6\u7279\u522B\u76DB\u5927\u7684\u5FEB\u4E50\u3002";
+  /* warm style */
+  var lines = [clean, ""];
+  if (quote) {
+    var quoteReactions = [
+      "\u6700\u8BA9\u6211\u5FC3\u5934\u4E00\u8F6F\u7684\u662F\u5979\u8BF4\uFF1A\u201C" + quote + "\u201D\u3002\u5C0F\u5C0F\u7684\u4EBA\uFF0C\u5C0F\u5C0F\u7684\u6267\u5FF5\u3002",
+      "\u5979\u8BF4\u201C" + quote + "\u201D\u7684\u65F6\u5019\u8868\u60C5\u7279\u522B\u8BA4\u771F\uFF0C\u597D\u50CF\u5728\u8BF4\u4E00\u4EF6\u5F88\u91CD\u8981\u7684\u4E8B\u3002",
+      "\u542C\u5230\u5979\u5FF5\u53E8\u201C" + quote + "\u201D\uFF0C\u7A81\u7136\u89C9\u5F97\u5F53\u5988\u7684\u5FEB\u4E50\u4E5F\u5F88\u5177\u4F53\u3002"
+    ];
+    lines.push(quoteReactions[Math.floor(Math.random() * quoteReactions.length)]);
+  } else if (funSentence) {
+    lines.push("\u5176\u5B9E\u6574\u4E2A\u8FC7\u7A0B\u6700\u6253\u52A8\u6211\u7684\u662F\uFF0C" + funSentence + "\u3002");
+  } else if (punchline) {
+    lines.push("\u5979\u6700\u540E\u8BF4\uFF1A\u201C" + punchline + "\u201D\u3002\u771F\u7684\u53C8\u597D\u7B11\u53C8\u6696\u3002");
+  }
+  lines.push("");
+  var warmClosings = [
+    "\u6709\u65F6\u5019\u89C9\u5F97\uFF0C\u5B69\u5B50\u957F\u5927\u7684\u8FC7\u7A0B\u91CC\uFF0C\u8FD9\u4E9B\u5C0F\u4E8B\u624D\u662F\u771F\u6B63\u7684\u5927\u4E8B\u3002",
+    "\u8BB0\u5F55\u4E00\u4E0B\u8FD9\u4E9B\u5C0F\u786E\u5E78\uFF0C\u4EE5\u540E\u7FFB\u8D77\u6765\u90FD\u662F\u5B9D\u85CF\u3002",
+    "\u5E0C\u671B\u5979\u957F\u5927\u4EE5\u540E\u770B\u5230\u8FD9\u4E9B\uFF0C\u4F1A\u89C9\u5F97\u81EA\u5DF1\u7684\u7AE5\u5E74\u5F88\u5FEB\u4E50\u3002",
+    "\u6BCF\u4E2A\u5C0F\u670B\u53CB\u90FD\u6709\u81EA\u5DF1\u7684\u5C0F\u4E16\u754C\uFF0C\u6211\u4EEC\u53EA\u662F\u5E78\u8FD0\u5730\u88AB\u9080\u8BF7\u53C2\u89C2\u3002"
+  ];
+  lines.push(warmClosings[Math.floor(Math.random() * warmClosings.length)]);
+  return lines.join("\n");
 }
 
 function buildResult() {
@@ -289,21 +426,71 @@ function buildResult() {
   var panels = buildPanels(story, panelCount);
   var title = buildTitle(story, els.title.value.trim());
   var caption = buildCaption(story, panels, els.style.value);
-  var tags = ["#\u5B9D\u5B9D\u65E5\u5E38", "#\u7AE5\u8A00\u7AE5\u8BED", "#\u80B2\u513F\u65E5\u5E38", "#\u4EB2\u5B50\u6F2B\u753B", "#\u5C0F\u670B\u53CB\u7684\u5FEB\u4E50", "#\u5168\u804C\u5976\u7238"];
-  if (/\u516D\u4E00|\u513F\u7AE5\u8282/.test(story + els.title.value)) tags.unshift("#\u516D\u4E00\u513F\u7AE5\u8282");
-  if (/\u6D1E\u6D1E\u978B/.test(story)) tags.push("#\u6D1E\u6D1E\u978B");
+  /* Dynamic tags based on story content */
+  var tags = ["#\u5B9D\u5B9D\u65E5\u5E38", "#\u4EB2\u5B50\u6F2B\u753B", "#\u5168\u804C\u5976\u7238"];
+  if (/\u516D\u4E00|\u513F\u7AE5\u8282|\u793C\u7269/.test(story + els.title.value)) tags.push("#\u516D\u4E00\u513F\u7AE5\u8282");
+  var topicNouns = [
+    "\u6D1E\u6D1E\u978B", "\u5FEB\u9012", "\u6CE1\u6FA1", "\u6D17\u6FA1", "\u7ED8\u672C",
+    "\u516C\u56ED", "\u81EA\u884C\u8F66", "\u6ED1\u677F\u8F66", "\u51B0\u6DC7\u6DCB", "\u86CB\u7CD5",
+    "\u5C0F\u72D7", "\u5C0F\u732B", "\u6C14\u7403", "\u79EF\u6728", "\u6C34\u67AA",
+    "\u5E3D\u5B50", "\u88D9\u5B50", "\u62D6\u978B", "\u8774\u8776", "\u897F\u74DC",
+    "\u6E38\u6CF3\u6C60", "\u6C99\u5751", "\u6ED1\u68AF", "\u52A8\u7269\u56ED",
+    "\u5F69\u6CE5", "\u62FC\u56FE", "\u73A9\u5177", "\u8D34\u7EB8", "\u753B\u7B14"
+  ];
+  for (var tni = 0; tni < topicNouns.length; tni++) {
+    if (story.indexOf(topicNouns[tni]) !== -1) {
+      tags.push("#" + topicNouns[tni]);
+    }
+  }
+  if (/\u7237\u7237|\u5976\u5976|\u5916\u5A46|\u5916\u516C/.test(story)) tags.push("#\u9694\u4EE3\u4EB2");
+  if (/\u5988\u5988/.test(story)) tags.push("#\u5988\u5988\u65E5\u5E38");
+  if (/\u665A\u4E0A|\u7761\u524D|\u4E0A\u5E8A/.test(story)) tags.push("#\u7761\u524D\u65E5\u5E38");
+  if (/\u4E0B\u96E8|\u4E0B\u96EA|\u5F69\u8679/.test(story)) tags.push("#\u5929\u6C14\u65E5\u5E38");
+  /* Shuffle tags for variety, always include core + up to 8 total */
+  var shuffled = tags.slice(3);
+  for (var si = shuffled.length - 1; si > 0; si--) {
+    var sj = Math.floor(Math.random() * (si + 1));
+    var tmp = shuffled[si];
+    shuffled[si] = shuffled[sj];
+    shuffled[sj] = tmp;
+  }
+  var finalTags = tags.slice(0, 3).concat(shuffled).slice(0, 8);
+
+  /* Dynamic pin comment based on story content */
+  var pinQuote = extractQuote(story);
+  var pinTopic = findTopic(normalizeStory(story));
+  var pin = "";
+  if (pinQuote && pinQuote.length >= 2 && pinQuote.length <= 20) {
+    var pinTemplates = [
+      "\u201C" + pinQuote + "\u201D\u2014\u2014\u5979\u8BF4\u8FD9\u53E5\u7684\u65F6\u5019\u8868\u60C5\u8D85\u8BA4\u771F\u7684\u54C8\u54C8",
+      "\u6EE1\u7684\u539F\u8BDD\uFF1A\u201C" + pinQuote + "\u201D\uFF0C\u6211\u5F53\u573A\u5C31\u7B11\u4E86",
+      "\u8C01\u61C2\u554A\uFF0C\u5979\u7ADF\u7136\u8BF4\u51FA\u4E86\u201C" + pinQuote + "\u201D"
+    ];
+    pin = pinTemplates[Math.floor(Math.random() * pinTemplates.length)];
+  } else if (pinTopic) {
+    var pinTopicTemplates = [
+      "\u4F60\u5BB6\u5C0F\u670B\u53CB\u4E5F\u4F1A\u5BF9" + pinTopic + "\u8FD9\u4E48\u6267\u7740\u5417\uFF1F",
+      "\u4E00\u4E2A" + pinTopic + "\u5C31\u80FD\u8BA9\u5979\u5F00\u5FC3\u4E00\u6574\u5929\uFF0C\u5C0F\u670B\u53CB\u7684\u5FEB\u4E50\u771F\u7B80\u5355",
+      "\u8BF4\u8BF4\u4F60\u5BB6\u5A03\u6700\u8FD1\u8FF7\u4E0A\u4E86\u4EC0\u4E48\uFF1F"
+    ];
+    pin = pinTopicTemplates[Math.floor(Math.random() * pinTopicTemplates.length)];
+  } else {
+    var defaultPins = [
+      "\u4F60\u5BB6\u5C0F\u670B\u53CB\u4E5F\u6709\u8FD9\u79CD\u641E\u7B11\u65E5\u5E38\u5417\uFF1F\u6765\u804A\u804A",
+      "\u517B\u5A03\u7684\u5FEB\u4E50\u5C31\u85CF\u5728\u8FD9\u4E9B\u5C0F\u4E8B\u91CC\u5440"
+    ];
+    pin = defaultPins[Math.floor(Math.random() * defaultPins.length)];
+  }
 
   var result = {
-    episodeTitle: els.title.value.trim() || "\u6EE1\u6EE1\u65E5\u5E38\u5C0F\u6F2B\u753B",
+    episodeTitle: els.title.value.trim() || buildEpisodeTitle(story),
     story: story,
     panels: panels,
     publish: {
       title: title,
       caption: caption,
-      tags: tags.slice(0, 8).join(" "),
-      pin: /\u5FEB\u9012\u59D0\u59D0/.test(story)
-        ? "\u5979\u73B0\u5728\u53EF\u80FD\u89C9\u5F97\uFF1A\u5FEB\u9012\u59D0\u59D0 = \u5FEB\u4E50\u914D\u9001\u5458\u3002"
-        : "\u4F60\u5BB6\u5C0F\u670B\u53CB\u4E5F\u4F1A\u8FD9\u6837\u4E00\u672C\u6B63\u7ECF\u5730\u8BA4\u771F\u5417\uFF1F"
+      tags: finalTags.join(" "),
+      pin: pin
     }
   };
   console.log("[buildResult] done, panels:", panels.length, "title:", result.episodeTitle);
@@ -640,9 +827,9 @@ function buildImagePrompts(result) {
   ].join("\uFF0C");
   var negative = "\u907F\u514D 3D \u6E32\u67D3\u3001\u7167\u7247\u611F\u3001\u6B27\u7F8E\u5361\u901A\u3001\u5851\u6599\u8D28\u611F\u3001\u5F3A\u9713\u8679\u8272\u3001\u6CB9\u817B\u9AD8\u5149\u3001\u6587\u5B57\u4E71\u7801\u3001\u8FC7\u5EA6 Q \u7248\u3001\u539A\u91CD\u5199\u5B9E\u76AE\u80A4\u7EB9\u7406\u3002";
 
-  var girlDesc = "\u6EE1\uFF08\u4E3B\u89D2\uFF09\uFF1A20 \u6708\u9F84\u4E2D\u56FD\u5C0F\u5973\u5B69\uFF0C\u5706\u8138\u8138\u988A\u9971\u6EE1\u4E0B\u5DF4\u5706\u6DA6\uFF0C\u5927\u800C\u5706\u7684\u9ED1\u68D5\u8272\u773C\u775B\uFF08\u597D\u5947\u660E\u4EAE\uFF09\uFF0C\u6DF1\u68D5\u8272\u77ED\u53D1\u53D1\u5C3E\u5FAE\u7FC5\u3001\u5218\u6D77\u7A00\u758F\u81EA\u7136\u504F\u5206\u3002\u76AE\u80A4\u504F\u767D\u7699\u6696\u8C03\uFF0C\u8138\u988A\u5FAE\u5FAE\u6CDB\u7C89\u3002\u5178\u578B\u5E7C\u513F\u5934\u8EAB\u6BD4\uFF08\u7EA6 1:3.5\uFF09\uFF0C\u624B\u81C2\u548C\u817F\u77ED\u800C\u5706\u6DA6\u3002\u7A7F\u7EA2\u767D\u914D\u8272\u6761\u7EB9\u889C\u3002";
-  var dadDesc = "\u7238\u7238\uFF08\u8001\u7238\uFF09\uFF1A\u5E74\u8F7B\u4E2D\u56FD\u7238\u7238\uFF0C\u4E2D\u7B49\u504F\u58EE\u5B9E\u80A9\u8180\u5BBD\uFF0C\u504F\u957F\u692D\u5706\u8138\uFF0C\u8F83\u5927\u6E29\u548C\u7684\u773C\u775B\uFF0C\u6DF1\u8272\u77ED\u53D1\u5229\u843D\u3002\u6234\u7EC6\u6846\u65B9\u5F62\u773C\u955C\uFF0C\u5DE6\u624B\u8155\u9ED1\u8272\u667A\u80FD\u624B\u8868\u3002\u7A7F\u7C73\u767D\u8272\u5BBD\u677E\u5706\u9886 T \u6064\uFF08\u5DE6\u80F8\u6709\u5C0F logo\uFF09\uFF0C\u6D45\u7070\u8272\u8FD0\u52A8\u77ED\u88E4\uFF0C\u767D\u8272\u8FD0\u52A8\u978B\u3002\u6E29\u548C\u5168\u804C\u5976\u7238\u6C14\u8D28\u3002";
-  var momDesc = "\u5988\u5988\uFF1A\u5E74\u8F7B\u4E2D\u56FD\u5988\u5988\uFF0C\u7EA4\u7EC6\u8EAB\u5F62\uFF0C\u67D4\u548C\u9E45\u86CB\u8138\uFF0C\u5927\u773C\u7B11\u8D77\u6765\u6709\u4EB2\u548C\u529B\uFF0C\u6DF1\u8272\u4E2D\u957F\u53D1\u81EA\u7136\u624E\u8D77\u4F4E\u9A6C\u5C3E\u3002\u6234\u7EC6\u6846\u773C\u955C\u3002\u7A7F\u85CF\u84DD\u8272\u77ED\u8896 T \u6064\uFF08\u80F8\u524D\u767D\u8272\u5361\u901A\u732B\u54AA\u7EBF\u6761\u753B\u548C Magician \u767D\u8272\u5B57\u6837\uFF0C\u9886\u53E3\u8896\u53E3\u767D\u8272\u6EDA\u8FB9\uFF09\uFF0C\u6D45\u84DD\u8272\u6C34\u6D17\u725B\u4ED4\u88E4\uFF0C\u767D\u8272\u6D1E\u6D1E\u978B\u3002\u5E72\u7EC3\u6E29\u67D4\u3002";
+  var girlDesc = "\u6EE1\uFF08\u4E3B\u89D2\uFF09\uFF1A20 \u6708\u9F84\u4E2D\u56FD\u5C0F\u5973\u5B69\uFF0C\u5706\u8138\u8138\u988A\u9971\u6EE1\u53CC\u4E0B\u5DF4\u5706\u6DA6\uFF0C\u5927\u800C\u5706\u7684\u9ED1\u68D5\u8272\u773C\u775B\uFF08\u597D\u5947\u660E\u4EAE\uFF09\uFF0C\u6DF1\u68D5\u8272\u77ED\u53D1\u521A\u8FC7\u8033\u6735\uFF0C\u53D1\u5C3E\u5FAE\u7FC5\u3001\u5218\u6D77\u7A00\u758F\u81EA\u7136\u504F\u5206\uFF0C\u6709\u65F6\u624E\u5C0F\u9A6C\u5C3E\u3002\u76AE\u80A4\u504F\u767D\u7699\u6696\u8C03\uFF0C\u8138\u988A\u82F9\u679C\u7EA2\u3002\u5178\u578B\u5E7C\u513F\u5934\u8EAB\u6BD4\uFF08\u7EA6 1:3.5\uFF09\uFF0C\u624B\u81C2\u548C\u817F\u77ED\u800C\u5706\u6DA6\uFF0C\u624B\u80CC\u6709\u5C0F\u8089\u7A9D\u3002\u6807\u5FD7\u6027\u978B\u5B50\uFF1A\u767D\u8272\u9B54\u672F\u8D34\u8FD0\u52A8\u978B\uFF0C\u7EA2\u8272\u978B\u8DDF\u62C9\u73AF\u3001\u978B\u5E95\u7EA2\u8272\u6EDA\u8FB9\uFF0C\u978B\u4FA7\u6709\u5361\u901A\u52A8\u7269\u8D34\u5E03\u3002";
+  var dadDesc = "\u7238\u7238\uFF08\u8001\u7238\uFF09\uFF1A\u5E74\u8F7B\u4E2D\u56FD\u7238\u7238\uFF0C\u4E2D\u7B49\u504F\u58EE\u5B9E\u80A9\u8180\u5BBD\uFF0C\u504F\u957F\u692D\u5706\u8138\uFF0C\u8F83\u5927\u6E29\u548C\u7684\u773C\u775B\uFF0C\u6DF1\u8272\u77ED\u53D1\u5229\u843D\u3002\u6234\u7EC6\u6846\u9ED1\u8272\u957F\u65B9\u5F62\u773C\u955C\uFF0C\u5DE6\u624B\u8155\u9ED1\u8272\u667A\u80FD\u624B\u8868\u3002\u7A7F\u7C73\u767D\u8272\u5BBD\u677E\u5706\u9886 T \u6064\uFF08\u5DE6\u80F8\u6709\u5C0F logo\uFF09\uFF0C\u6D45\u7070\u8272\u8FD0\u52A8\u77ED\u88E4\uFF0C\u767D\u8272\u7CFB\u5E26\u8FD0\u52A8\u978B\u3002\u5728\u5BB6\u7A7F\u9ED1\u8272\u6D1E\u6D1E\u978B\uFF0C\u6302\u6EE1\u5F69\u8272\u978B\u82B1\uFF08\u7235\u722A\u3001\u5C0F\u52A8\u7269\u3001baby \u5B57\u6837\uFF09\u3002\u6E29\u548C\u5168\u804C\u5976\u7238\u6C14\u8D28\u3002";
+  var momDesc = "\u5988\u5988\uFF1A\u5E74\u8F7B\u4E2D\u56FD\u5988\u5988\uFF0C\u7EA4\u7EC6\u8EAB\u5F62\uFF0C\u67D4\u548C\u9E45\u86CB\u8138\uFF0C\u5927\u773C\u7B11\u8D77\u6765\u6709\u4EB2\u548C\u529B\uFF0C\u6DF1\u8272\u4E2D\u957F\u53D1\u81EA\u7136\u624E\u4F4E\u9A6C\u5C3E\u3002\u6234\u7EC6\u6846\u5706\u5F62\u773C\u955C\u3002\u7A7F\u85CF\u84DD\u8272\u77ED\u8896 T \u6064\uFF08\u9886\u53E3\u548C\u8896\u53E3\u767D\u8272\u6EDA\u8FB9\uFF0C\u80F8\u524D\u767D\u8272\u5361\u901A\u732B\u54AA\u56FE\u6848\u548C Magician Since 2006 \u767D\u8272\u5B57\u6837\uFF09\uFF0C\u6D45\u84DD\u8272\u6C34\u6D17\u725B\u4ED4\u88E4\uFF0C\u767D\u8272\u6D1E\u6D1E\u978B\uFF08\u6302\u9F99\u732B\u3001\u5496\u5561\u676F\u3001\u6E38\u620F\u673A\u7B49\u53EF\u7231\u978B\u82B1\uFF09\u3002\u5E72\u7EC3\u6E29\u67D4\u3002";
 
   var scene = (els.scene && els.scene.value) || "\u5BA2\u5385";
   var girlOutfit = inferGirlOutfit(scene);
@@ -704,18 +891,18 @@ function buildImagePrompts(result) {
 
 function inferGirlOutfit(scene) {
   if (/\u516C\u56ED|\u5C0F\u533A|\u6237\u5916|\u6B65\u9053/.test(scene)) {
-    return "\u84DD\u8272\u725B\u4ED4\u80CC\u5E26\u8FDE\u4F53\u88E4\uFF08\u767D\u8272\u957F\u8896\u5185\u642D\uFF0C\u80F8\u524D\u53E3\u888B\u6709\u6D45\u9EC4\u8272\u4E91\u6735\u548C\u9999\u8549\u5C0F\u8D34\u5E03\u88C5\u9970\uFF0C\u91D1\u5C5E\u6263\u80CC\u5E26\uFF09\uFF0C\u642D\u914D\u7EA2\u767D\u914D\u8272\u6761\u7EB9\u889C\u548C\u7EA2\u767D\u8FD0\u52A8\u978B\u3002\u6D3B\u6CFC\u597D\u52A8\u611F\u3002";
+    return "\u6D45\u84DD\u8272\u725B\u4ED4\u80CC\u5E26\u8FDE\u4F53\u88E4\uFF08\u767D\u8272\u957F\u8896\u5185\u642D\uFF0C\u80F8\u524D\u53E3\u888B\u6709\u6D45\u9EC4\u8272\u4E91\u6735\u3001\u9999\u8549\u3001\u5C0F\u82B1\u8D34\u5E03\u88C5\u9970\uFF0C\u80A9\u5E26\u91D1\u5C5E\u6309\u6263\uFF09\uFF0C\u642D\u914D\u7EA2\u767D\u914D\u8272\u6761\u7EB9\u889C\u548C\u767D\u8272\u9B54\u672F\u8D34\u8FD0\u52A8\u978B\uFF08\u7EA2\u8272\u978B\u8DDF\u62C9\u73AF\uFF09\u3002\u6D3B\u6CFC\u597D\u52A8\u611F\u3002";
   }
   if (/\u6D74\u5BA4|\u6D17\u6FA1/.test(scene)) {
     return "\u53EA\u7A7F\u7EB8\u5C3F\u88E4/\u5C0F\u5185\u88E4\uFF0C\u5149\u7740\u5C0F\u811A\u4E2B\uFF0C\u5706\u6DA6\u7684\u624B\u81C2\u548C\u817F\u3002";
   }
   if (/\u5367\u5BA4|\u7761/.test(scene)) {
-    return "\u5976\u767D\u8272\u7EAF\u68C9\u8FDE\u4F53\u7761\u8863\uFF0C\u8F7B\u8584\u67D4\u8F6F\uFF0C\u5C0F\u811A\u4E2B\u9732\u51FA\u6765\u3002";
+    return "\u67D4\u8F6F\u7C89\u8272\u8FDE\u811A\u7EAF\u68C9\u7761\u8863\uFF0C\u957F\u8896\uFF0C\u8F7B\u8584\u4FDD\u6696\u3002";
   }
   if (/\u9910\u684C|\u996D\u684C|\u5403\u996D/.test(scene)) {
-    return "\u767D\u8272\u77ED\u8896\u4E0A\u8863\uFF08\u80F8\u524D\u6709\u9EC4\u8272\u5C0F\u67E0\u6AAC\u56FE\u6848\u548C\u7EFF\u8272\u5C0F\u53F6\u5B50\uFF09\uFF0C\u6D45\u6A44\u6984\u7EFF\u5F39\u529B\u957F\u88E4\uFF0C\u88E4\u811A\u6709\u5C0F\u9CB8\u9C7C\u7EBF\u6761\u753B\u56FE\u6848\u3002";
+    return "\u767D\u8272\u7F57\u7EB9\u77ED\u8896\u4E0A\u8863\uFF08\u80F8\u524D\u6709\u9EC4\u8272\u5C0F\u67E0\u6AAC\u56FE\u6848\u548C\u7EFF\u8272\u5C0F\u53F6\u5B50\uFF09\uFF0C\u6D45\u6A44\u6984\u7EFF\u5F39\u529B\u957F\u88E4\uFF08\u88E4\u811A\u53F3\u4E0B\u89D2\u6709\u5C0F\u9ED1\u8272\u7EBF\u6761\u753B\u9CB8\u9C7C\u56FE\u6848\uFF09\u3002";
   }
-  return "\u767D\u8272\u77ED\u8896\u4E0A\u8863\u642D\u914D\u6D45\u6A44\u6984\u7EFF\u5F39\u529B\u677E\u7D27\u8170\u957F\u88E4\uFF0C\u88E4\u811A\u53F3\u4E0B\u89D2\u6709\u5C0F\u9ED1\u8272\u7EBF\u6761\u753B\u5C0F\u9CB8\u9C7C\u56FE\u6848\u3002\u642D\u914D\u7EA2\u767D\u8FD0\u52A8\u978B\u3002\u6E05\u723D\u65E5\u5E38\u611F\u3002";
+  return "\u767D\u8272\u7F57\u7EB9\u77ED\u8896\u4E0A\u8863\uFF08\u80F8\u524D\u9EC4\u8272\u67E0\u6AAC + \u7EFF\u53F6\u5C0F\u56FE\u6848\uFF09\u642D\u914D\u6D45\u6A44\u6984\u7EFF\u5F39\u529B\u677E\u7D27\u8170\u957F\u88E4\uFF08\u88E4\u811A\u53F3\u4E0B\u89D2\u5C0F\u9ED1\u8272\u7EBF\u6761\u753B\u9CB8\u9C7C\uFF09\u3002\u767D\u8272\u9B54\u672F\u8D34\u8FD0\u52A8\u978B\uFF08\u7EA2\u8272\u978B\u8DDF\u62C9\u73AF\u3001\u978B\u5E95\u7EA2\u8272\u6EDA\u8FB9\uFF09\u3002\u6E05\u723D\u65E5\u5E38\u611F\u3002";
 }
 
 function buildSceneDescription(scene, action) {
@@ -983,18 +1170,22 @@ function generatePanelImages() {
   var stylePrefix = "Studio Ghibli anime style, warm hand-drawn Japanese animation, soft pencil lines, watercolor texture background, low saturation warm colors, soft natural light, clean cel-shading, cute round toddler proportions 1:3.5, rich daily life details";
   var negativePrompt = "3D render, photorealistic, western cartoon, plastic texture, neon colors, text, watermark, ugly, deformed, blurry";
 
-  var girlDesc = "A 20-month-old Chinese toddler girl named Man, round chubby face, big dark brown eyes, short dark brown hair with slightly flipped ends, sparse natural bangs. Fair warm-toned skin, slightly pink cheeks. Short round arms and legs. Red and white striped socks.";
-  var dadDesc = "Young Chinese dad, medium build broad shoulders, oval face, gentle eyes, short dark hair, thin square glasses. White crew-neck t-shirt, light gray athletic shorts, white sneakers.";
+  /* Character descriptions with strong visual anchors for cross-panel consistency */
+  var girlAnchor = "IMPORTANT: The toddler girl MUST look exactly the same in every frame — identical face shape, identical hair, identical body proportions, identical shoes. Only her pose and expression change.";
+  var girlDesc = "A 20-month-old Chinese toddler girl (Man). Face: perfectly round chubby face with full rounded chin and double chin, large round dark brown eyes (diameter ~1/4 of face width), tiny button nose, small curved mouth. Hair: short dark brown hair just past ears, sometimes tied in a tiny low ponytail or left with slightly flipped-out ends, thin wispy bangs parted slightly left covering forehead. Skin: fair porcelain with warm undertone, naturally rosy apple-red cheeks. Build: typical toddler 1:3.5 head-to-body ratio, short pudgy arms and legs, small rounded hands with dimpled knuckles. Signature shoes: white velcro-strap sneakers with red heel tabs and red piping along sole edge, small cartoon animal patch on outer side near strap.";
+  var dadDesc = "Young Chinese dad in his late 20s. Face: slightly elongated oval shape, gentle almond-shaped eyes behind thin black rectangular-framed glasses, calm warm smile. Hair: very short neat black hair with clean sides. Build: medium build with broad shoulders, slightly muscular arms, taller than toddler by roughly 3x. Outfit: light beige/off-white crew-neck t-shirt (small dark logo on left chest), light heather gray knee-length athletic shorts, white athletic lace-up sneakers. Black smartwatch on left wrist. At home wears black Crocs clogs decorated with colorful charms including paw prints and 'baby' text. Warm gentle full-time dad vibe.";
 
   /* Infer outfit based on scene */
   var scene = (els.scene && els.scene.value) || "\u5BA2\u5385";
   var outfitSuffix = "";
   if (/\u516C\u56ED|\u6237\u5916/.test(scene)) {
-    outfitSuffix = " Wearing blue denim overalls with white long-sleeve inner shirt, yellow cloud patches on chest pocket.";
+    outfitSuffix = " Wearing light blue denim overalls with white long-sleeve inner shirt, chest pocket has yellow cloud, banana and flower applique patches, metal snap buttons on shoulder straps. Red-and-white sneakers with velcro straps. Sometimes red-and-white striped socks visible above shoes.";
   } else if (/\u6D74\u5BA4|\u6D17\u6FA1/.test(scene)) {
-    outfitSuffix = " Wearing only a diaper, bare feet.";
+    outfitSuffix = " Wearing only a diaper/underwear, bare round chubby feet.";
+  } else if (/\u5367\u5BA4|\u7761/.test(scene)) {
+    outfitSuffix = " Wearing soft pink footed one-piece pajamas, long sleeves, cozy and warm.";
   } else {
-    outfitSuffix = " Wearing white short-sleeve top with small lemon pattern, light olive green stretchy pants with small whale drawing at ankle.";
+    outfitSuffix = " Wearing white ribbed short-sleeve top with small yellow lemon and green leaf pattern on chest, light olive-green elastic-waist pants with tiny black line-art whale drawing at lower right leg. White velcro-strap sneakers with red accents.";
   }
 
   var promises = [];
@@ -1006,13 +1197,13 @@ function generatePanelImages() {
       var ch = charactersInScene[ci];
       if (ch === "\u6EE1") charList += girlDesc + outfitSuffix + " ";
       else if (ch === "\u7238\u7238") charList += dadDesc + " ";
-      else if (ch === "\u7237\u7237") charList += "Elderly Chinese grandfather, kind face, short gray hair, light colored shirt and dark pants. ";
+      else if (ch === "\u7237\u7237") charList += "Elderly Chinese grandfather in his 60s, kind smiling face with laugh lines, short silver-gray hair, wearing plain light beige button-up shirt and dark navy trousers, gentle warm eyes. ";
     }
 
     var sceneDesc = buildSceneDescription(scene, panel.action);
     var emotionDesc = buildEmotionDescription(panel.role);
 
-    var prompt = stylePrefix + ". " + charList + "Scene: " + sceneDesc + ". Action: " + panel.action + ". Emotion: " + emotionDesc + ". Vertical single comic panel, characters centered or rule-of-thirds composition, clean empty speech bubble frames (no readable text inside), rich life details in background.";
+    var prompt = stylePrefix + ". " + girlAnchor + " " + charList + "Scene: " + sceneDesc + ". Action: " + panel.action + ". Emotion: " + emotionDesc + ". Vertical single comic panel, characters centered or rule-of-thirds, maintain exact same character designs throughout the series, clean empty white speech bubble frames (no readable text), rich daily life details in background, soft warm ambient lighting.";
 
     promises.push({
       index: i,
